@@ -1,7 +1,7 @@
 import torch
 from tqdm.auto import tqdm
 
-import configs
+from going_modular import configs
 
 true_label = 1
 fake_label = 0
@@ -21,7 +21,7 @@ def one_step_train(net_D, net_G, train_dataloader, loss_fn, optimizer_D, optimiz
     # Mean of our predictions for real pics and fake pics in dis and generator
     D_real_mean, D_fake_mean, D_G_mean = 0, 0 ,0
 
-    for batch, (X, _) in tqdm(enumerate(train_dataloader)):
+    for _ , (X, _) in tqdm(enumerate(train_dataloader), desc="Training", total=len(train_dataloader)):
 
         optimizer_D.zero_grad()
         
@@ -54,7 +54,7 @@ def one_step_train(net_D, net_G, train_dataloader, loss_fn, optimizer_D, optimiz
         #create pics with latent vector
         fake_pics = net_G(noise)
         #feed fake pics to discriminator
-        output = net_D(fake_pics).view(-1)
+        output = net_D(fake_pics.detach()).view(-1)
         D_fake = output.mean().item()
         D_fake_mean += D_fake
 
@@ -83,7 +83,7 @@ def one_step_train(net_D, net_G, train_dataloader, loss_fn, optimizer_D, optimiz
         D_G_mean += G_m
 
         #we should use true_label for our g_loss 
-        g_loss = loss_fn(output, true_label)
+        g_loss = loss_fn(output, true_labels)
         g_loss.backward()
 
         g_loss = g_loss.item()
@@ -118,6 +118,7 @@ def train(net_D,
             'D_G_mean':[],
         }
     
+    # for epoch in tqdm(range(epochs), desc="Training", total=epochs):
     for epoch in range(epochs):
 
         D_loss, G_loss, D_real_mean, D_fake_mean, D_G_mean = one_step_train(net_D=net_D,
